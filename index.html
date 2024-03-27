@@ -1,0 +1,358 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Green Map with Moving Animals and Salads</title>
+  <style>
+   body {
+      background: url('bg.jpg'); /* Gray background */
+      background-position: center;
+      background-size: cover;
+      display: flex;
+      justify-content: center;
+      flex-direction: column;
+      align-items: center;
+      height: 100vh;
+      margin: 0;
+      font-size: 2em;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    }
+    canvas {
+      border: 1px solid black;
+    }
+  </style>
+</head>
+<body>
+   <strong>Time: 6000 BC</strong>
+  <canvas id="mapCanvas" width="800" height="600"></canvas>
+  <script>
+
+
+
+    class Animal {
+      constructor(x, y, color, speed, maxHealth, health, isMovingRandomly) {
+        this.x = x;
+        this.y = y;
+        this.color = color;
+        this.speed = speed;
+        this.maxHealth = maxHealth;
+        this.health = health;
+        this.isMovingRandomly = isMovingRandomly;
+        this.changeDirectionRate = 0.01
+        this.dx = (Math.random() * this.speed * 2) - this.speed
+        this.dy = (Math.random() * this.speed * 2) - this.speed
+      }
+
+      draw(ctx) {
+        // Draw the animal
+        ctx.fillStyle = this.color;
+        ctx.beginPath();
+        ctx.arc(this.x, this.y, 10, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Draw health bar
+        ctx.fillStyle = 'red';
+        ctx.fillRect(this.x - 15, this.y + 15, 30, 5);
+
+        // Draw remaining health
+        ctx.fillStyle = 'green';
+        const remainingHealth = (this.health / this.maxHealth) * 30;
+        ctx.fillRect(this.x - 15, this.y + 15, remainingHealth, 5);
+      }
+
+      move(canvasWidth, canvasHeight) {
+        if (this.isMovingRandomly) {
+          // Calculate new position randomly
+          if (Math.random() < this.changeDirectionRate) {
+            this.dx = (Math.random() * this.speed * 2) - this.speed
+            this.dy = (Math.random() * this.speed * 2) - this.speed
+          }
+
+          this.x += this.dx;
+          this.y += this.dy;
+        }
+        // Constrain within canvas boundaries
+        this.x = Math.max(10, Math.min(canvasWidth - 10, this.x)); // Assuming animals have a radius of 10
+        this.y = Math.max(10, Math.min(canvasHeight - 10, this.y)); // Assuming animals have a radius of 10
+      }
+
+      updateHealth() {
+        this.health -= 0.1; // Decrease health over time
+        if (this.health <= 0) {
+          // If health is zero or less, remove the animal
+          
+          if (Math.random() < 0.05 && this.color == 'brown') {
+            map.wolves.push(new Animal(this.x + 10*Math.random() + 1, this.y + 10*Math.random() + 1, 'gray', .09, 800, 800, true));
+         }
+          return true; // Animal is dead
+        }
+        return false; // Animal is alive
+      }
+
+      moveToNearestSalad(salads) {
+        // Filter available salads
+        const availableSalads = salads.filter(salad => salad.isAvailable);
+        if (availableSalads.length === 0) {
+          // No available salads
+          return;
+        }
+
+        // Find nearest salad among available salads
+        let nearestSalad = null;
+        let minDistance = Infinity;
+        availableSalads.forEach(salad => {
+          const distance = Math.sqrt((this.x - salad.x) ** 2 + (this.y - salad.y) ** 2);
+          if (distance < minDistance) {
+            minDistance = distance;
+            nearestSalad = salad;
+          }
+        });
+
+        // Move towards the nearest salad
+        this.isMovingRandomly = false;
+        const dx = nearestSalad.x - this.x;
+        const dy = nearestSalad.y - this.y;
+        const distance = Math.sqrt(dx ** 2 + dy ** 2);
+        if (distance > 0) {
+          this.x += (dx / distance) * this.speed;
+          this.y += (dy / distance) * this.speed;
+        }
+      }
+
+      findNearestGoat(goats) {
+         // Filter available goats
+         const availableGoats = goats.filter(goat => goat.health > 0);
+         if (availableGoats.length === 0) {
+           // No available goats
+           return null;
+         }
+ 
+         // Find nearest goat among available goats
+         let nearestGoat = null;
+         let minDistance = Infinity;
+         availableGoats.forEach(goat => {
+           const distance = Math.sqrt((this.x - goat.x) ** 2 + (this.y - goat.y) ** 2);
+           if (distance < minDistance) {
+             minDistance = distance;
+             nearestGoat = goat;
+           }
+         });
+ 
+         return nearestGoat;
+       }
+ 
+       huntNearestGoat(goats) {
+         const nearestGoat = this.findNearestGoat(goats);
+         if (!nearestGoat) {
+           // No available goats
+           return;
+         }
+ 
+         // Move towards the nearest goat
+         this.isMovingRandomly = false;
+         const dx = nearestGoat.x - this.x;
+         const dy = nearestGoat.y - this.y;
+         const distance = Math.sqrt(dx ** 2 + dy ** 2);
+         if (distance > 0) {
+           this.x += (dx / distance) * this.speed;
+           this.y += (dy / distance) * this.speed;
+         }
+ 
+         // If within eating distance, reduce goat's health and increase wolf's health
+         if (distance < 20) { // Assuming animals have a radius of 10
+           nearestGoat.health -= 3;
+           this.health = Math.min(this.maxHealth, this.health + 10);
+         }
+         
+       }
+    }
+
+    class Salad {
+      constructor(x, y, isAvailable, respawnTime, lastEatenTime) {
+        this.x = x;
+        this.y = y;
+        this.isAvailable = isAvailable;
+        this.respawnTime = respawnTime; // 10000ms or 10 seconds
+        this.lastEatenTime = lastEatenTime;
+      }
+
+      draw(ctx) {
+        if (this.isAvailable) {
+          ctx.fillStyle = 'green';
+          ctx.beginPath();
+          ctx.arc(this.x, this.y, 5, 0, Math.PI * 2);
+          ctx.fill();
+        }
+      }
+
+      eat() {
+        this.isAvailable = false;
+        this.lastEatenTime = Date.now();
+        
+      }
+
+      respawn() {
+        if (!this.isAvailable && Date.now() - this.lastEatenTime > this.respawnTime) {
+          this.isAvailable = true;
+        }
+      }
+    }
+
+    class Map {
+      constructor(canvasId) {
+        this.canvas = document.getElementById(canvasId);
+        this.ctx = this.canvas.getContext('2d');
+        this.wolves = [];
+        this.goats = [];
+        this.salads = [];
+        this.time = JSON.parse(localStorage.getItem('time')) || -6000;
+
+        // Load data from local storage if available
+        this.loadFromLocalStorage();
+        
+        // Spawn initial animals and salads if no data in local storage
+
+      }
+
+      // Function to save data to local storage
+      saveToLocalStorage() {
+        localStorage.setItem('wolves', JSON.stringify(this.wolves));
+        localStorage.setItem('goats', JSON.stringify(this.goats));
+        localStorage.setItem('salads', JSON.stringify(this.salads));
+        localStorage.setItem('time', JSON.stringify(this.time));
+      }
+
+      // Function to load data from local storage
+      loadFromLocalStorage() {
+        const savedWolves = JSON.parse(localStorage.getItem('wolves'));
+        const savedGoats = JSON.parse(localStorage.getItem('goats'));
+        const savedSalads = JSON.parse(localStorage.getItem('salads'));
+        this.spawn(savedWolves, savedGoats, savedSalads)
+      }
+
+      spawn(savedWolves, savedGoats, savedSalads) {
+         if (savedWolves.length === 0 && savedGoats.length === 0) {
+            this.time = -6000
+            for (let i = 0; i < 40; i++) {
+               if (Math.random() < 0.5) {
+                  if (Math.random() < 0.3) {
+                    this.wolves.push(new Animal(Math.random() * (this.canvas.width / 1.5), Math.random() * this.canvas.height, 'gray', .09, 800, 800, true));
+                  } else {
+                    this.goats.push(new Animal(Math.random() * this.canvas.width /1.5, Math.random() * this.canvas.height, 'brown', .06, 500, 500, true));
+                  }
+                }
+                this.salads.push(new Salad(Math.random() * this.canvas.width, Math.random() * this.canvas.height, true, 2000, 0));
+            }
+           } else {
+               savedWolves.forEach(wolf => {
+                  //console.log(wolf);
+                  this.wolves.push(new Animal(wolf.x, wolf.y, wolf.color, wolf.speed, wolf.maxHealth, wolf.health, wolf.isMovingRandomly));
+               })
+               savedGoats.forEach(goat => {
+                  //console.log(goat);
+                  this.goats.push(new Animal(goat.x, goat.y, goat.color, goat.speed, goat.maxHealth, goat.health, goat.isMovingRandomly));
+               })
+               savedSalads.forEach(salad => {
+                  //console.log(salad);
+                  this.salads.push(new Salad(salad.x, salad.y, salad.isAvailable, salad.respawnTime, salad.lastEatenTime));
+               })
+            }
+        }
+
+      drawMap() {
+        this.ctx.fillStyle = 'lightgreen';
+        this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
+      }
+
+      clearCanvas() {
+        this.ctx.clearRect(0, 
+        0, this.canvas.width, this.canvas.height);
+        this.drawMap();
+      }
+
+      updatePositions() {
+        this.wolves.forEach(wolf => {
+          wolf.move(this.canvas.width, this.canvas.height);
+
+          const nearbyGoats = this.goats.filter(goat => {
+            const distance = Math.sqrt((wolf.x - goat.x) ** 2 + (wolf.y - goat.y) ** 2);
+            return distance < 30;
+         });
+          if (wolf.health < wolf.maxHealth * 0.5 || nearbyGoats.length > 0) {
+            wolf.huntNearestGoat(this.goats);
+          } else {
+            wolf.isMovingRandomly = true;
+          }
+        });
+        this.goats.forEach(goat => {
+          goat.move(this.canvas.width, this.canvas.height);
+          if (goat.health < goat.maxHealth * 0.5) {
+            goat.moveToNearestSalad(this.salads);
+          } else {
+            goat.isMovingRandomly = true;
+          }
+        });
+      }
+
+      updateHealth() {
+        this.wolves = this.wolves.filter(wolf => !wolf.updateHealth());
+        this.goats = this.goats.filter(goat => !goat.updateHealth());
+      }
+
+      checkCollisions() {
+        for (let i = 0; i < this.goats.length; i++) {
+          for (let j = 0; j < this.salads.length; j++) {
+            const goat = this.goats[i];
+            const salad = this.salads[j];
+            const distance = Math.sqrt((goat.x - salad.x) ** 2 + (goat.y - salad.y) ** 2);
+            if (distance < 15 && salad.isAvailable) { // Assuming animals have a radius of 10 and salad has a radius of 5
+              // Goat eats salad and regains health
+              goat.health = goat.maxHealth;
+              salad.eat();
+              if (Math.random() < 0.2) {
+               this.goats.push(new Animal(goat.x, goat.y, 'brown', .06, 500, 500, true));
+              }
+            }
+          }
+        }
+      }
+
+      updateSalads() {
+        this.salads.forEach(salad => salad.respawn());
+      }
+
+      drawAnimals() {
+        this.wolves.forEach(wolf => wolf.draw(this.ctx));
+        this.goats.forEach(goat => goat.draw(this.ctx));
+      }
+
+      drawSalads() {
+        this.salads.forEach(salad => salad.draw(this.ctx));
+      }
+      updateTime() {
+         this.time += 0.05;
+         let time;
+         this.time < 0 ? time = Math.floor(this.time)*-1 + ' BC' : time = Math.floor(this.time)
+         document.querySelector('strong').innerHTML = `Time: ${time}`
+      }
+
+      animate() {
+         this.clearCanvas();
+         this.updatePositions();
+         this.updateHealth();
+         this.checkCollisions();
+         this.updateSalads();
+         this.drawAnimals();
+         this.drawSalads();
+         this.saveToLocalStorage();
+         this.updateTime()
+         requestAnimationFrame(() => this.animate());
+      }
+
+
+    }
+    const map = new Map('mapCanvas');
+    map.drawMap();
+    map.animate();
+  </script>
+</body>
+</html>
