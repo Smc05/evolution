@@ -223,9 +223,9 @@
 
       // Function to load data from local storage
       loadFromLocalStorage() {
-        const savedWolves = JSON.parse(localStorage.getItem('wolves'));
-        const savedGoats = JSON.parse(localStorage.getItem('goats'));
-        const savedSalads = JSON.parse(localStorage.getItem('salads'));
+        const savedWolves = JSON.parse(localStorage.getItem('wolves')) || [];
+        const savedGoats = JSON.parse(localStorage.getItem('goats')) || [];
+        const savedSalads = JSON.parse(localStorage.getItem('salads')) || [];
         this.spawn(savedWolves, savedGoats, savedSalads)
       }
 
