@@ -37,7 +37,7 @@
         this.maxHealth = maxHealth;
         this.health = health;
         this.isMovingRandomly = isMovingRandomly;
-        this.changeDirectionRate = 0.01
+        this.changeDirectionRate = 0.005
         this.dx = (Math.random() * this.speed * 2) - this.speed
         this.dy = (Math.random() * this.speed * 2) - this.speed
       }
@@ -81,7 +81,7 @@
           // If health is zero or less, remove the animal
           
           if (Math.random() < 0.05 && this.color == 'brown') {
-            map.wolves.push(new Animal(this.x + 10*Math.random() + 1, this.y + 10*Math.random() + 1, 'gray', .09, 800, 800, true));
+            map.wolves.push(new Animal(this.x + 10*Math.random() + 1, this.y + 10*Math.random() + 1, 'gray', .09, 600, 600, true));
          }
           return true; // Animal is dead
         }
@@ -235,7 +235,7 @@
             for (let i = 0; i < 40; i++) {
                if (Math.random() < 0.5) {
                   if (Math.random() < 0.3) {
-                    this.wolves.push(new Animal(Math.random() * (this.canvas.width / 1.5), Math.random() * this.canvas.height, 'gray', .09, 800, 800, true));
+                    this.wolves.push(new Animal(Math.random() * (this.canvas.width / 1.5), Math.random() * this.canvas.height, 'gray', .09, 600, 600, true));
                   } else {
                     this.goats.push(new Animal(Math.random() * this.canvas.width /1.5, Math.random() * this.canvas.height, 'brown', .06, 500, 500, true));
                   }
